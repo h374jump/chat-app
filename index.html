@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat App</title>
+  <style>
+    body { font-family: Arial; margin: 0; padding: 0; }
+    #messages { height: 80vh; overflow-y: scroll; padding: 10px; }
+    .message { margin: 5px 0; padding: 5px; background: #eee; border-radius: 5px; }
+    .you { background: #d1ffd1; }
+    .time { font-size: 10px; margin-left: 10px; color: gray; }
+    #inputArea { position: fixed; bottom: 0; width: 100%; display: flex; }
+    input { flex: 1; padding: 10px; }
+    button { padding: 10px; }
+  </style>
+</head>
+<body>
+
+<div id="messages"></div>
+
+<div id="inputArea">
+  <input id="messageInput" placeholder="Type a message..." />
+  <button id="sendBtn">Send</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+const socket = io();
+
+const messagesDiv = document.getElementById("messages");
+const input = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+
+// 👇 ROOM SYSTEM
+let room = prompt("Enter room name (e.g. general, gaming):");
+if (!room) room = "general";
+
+// username
+let username = localStorage.getItem("username");
+
+if (!username) {
+  username = prompt("Enter your name:");
+  if (!username) username = "User";
+  localStorage.setItem("username", username);
+}
+
+// join room
+socket.emit("joinRoom", room);
+
+// load old messages
+socket.on("loadMessages", (msgs) => {
+  messagesDiv.innerHTML = "";
+  msgs.forEach(displayMessage);
+});
+
+// send message
+sendBtn.onclick = sendMessage;
+
+input.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
+
+function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  const msg = {
+    name: username,
+    text,
+    time: new Date().toLocaleTimeString(),
+    room
+  };
+
+  socket.emit("sendMessage", { room, msg });
+
+  input.value = "";
+}
+
+// receive message
+socket.on("newMessage", (msg) => {
+  displayMessage(msg);
+});
+
+// display message
+function displayMessage(msg) {
+  const div = document.createElement("div");
+  div.classList.add("message");
+
+  if (msg.name === username) {
+    div.classList.add("you");
+  }
+
+  div.innerHTML = `
+    <strong>${msg.name}</strong>: ${msg.text}
+    <span class="time">${msg.time}</span>
+  `;
+
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+</script>
+</script>
+
+</body>
+</html>
