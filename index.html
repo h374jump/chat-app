@@ -1,37 +1,71 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Chat App</title>
-  <style>
+<title>Chat App</title>
+
+<style>
 body {
   margin: 0;
   font-family: Arial;
+  display: flex;
+  height: 100vh;
   background: #2c2f33;
   color: white;
 }
 
-#messages {
-  height: 85vh;
-  overflow-y: scroll;
+/* Sidebar */
+#sidebar {
+  width: 220px;
+  background: #202225;
   padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+#roomName {
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Main chat */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
 }
 
 .message {
+  background: #40444b;
   margin: 5px 0;
   padding: 8px;
-  background: #40444b;
-  border-radius: 5px;
+  border-radius: 6px;
 }
 
 .you {
   background: #5865f2;
 }
 
+.time {
+  font-size: 10px;
+  margin-left: 10px;
+  opacity: 0.6;
+}
+
+/* Input */
 #inputArea {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
   display: flex;
+  padding: 10px;
+  background: #23272a;
 }
 
 input {
@@ -41,26 +75,78 @@ input {
   outline: none;
 }
 
-button {
+#sendBtn {
   padding: 10px;
   background: #5865f2;
   color: white;
   border: none;
 }
+
+/* Settings panel */
+#settings {
+  position: fixed;
+  right: -300px;
+  top: 0;
+  width: 300px;
+  height: 100%;
+  background: #2c2f33;
+  padding: 20px;
+  transition: 0.3s;
+}
+
+#settings.open {
+  right: 0;
+}
+
+.setting {
+  margin-bottom: 15px;
+}
+
+.light-mode {
+  background: #f0f0f0;
+  color: black;
+}
 </style>
+
 </head>
 <body>
 
-<div id="messages"></div>
+<!-- Sidebar -->
+<div id="sidebar">
+  <div id="roomName"></div>
 
-<div id="inputArea">
-  <input id="messageInput" placeholder="Type a message..." />
-  <button id="sendBtn">Send</button>
+  <button onclick="toggleSettings()">⚙️ Settings</button>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<!-- Main -->
+<div id="main">
+  <div id="messages"></div>
 
-<script>
+  <div id="inputArea">
+    <input id="messageInput" placeholder="Type message..." />
+    <button id="sendBtn">Send</button>
+  </div>
+</div>
+
+<!-- Settings Panel -->
+<div id="settings">
+  <h3>Settings</h3>
+
+  <div class="setting">
+    <label>Username:</label><br>
+    <input id="usernameInput" />
+    <button onclick="saveUsername()">Save</button>
+  </div>
+
+  <div class="setting">
+    <button onclick="toggleTheme()">Toggle Dark/Light</button>
+  </div>
+
+  <div class="setting">
+    <button onclick="clearChat()">Clear Chat (local)</button>
+  </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 
 <script>
@@ -70,9 +156,10 @@ const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 
-// 👇 ROOM SYSTEM
-let room = prompt("Enter room name (e.g. general, gaming):");
+let room = prompt("Enter room:");
 if (!room) room = "general";
+
+document.getElementById("roomName").innerText = "#" + room;
 
 // username
 let username = localStorage.getItem("username");
@@ -86,7 +173,7 @@ if (!username) {
 // join room
 socket.emit("joinRoom", room);
 
-// load old messages
+// load messages
 socket.on("loadMessages", (msgs) => {
   messagesDiv.innerHTML = "";
   msgs.forEach(displayMessage);
@@ -111,16 +198,12 @@ function sendMessage() {
   };
 
   socket.emit("sendMessage", { room, msg });
-
   input.value = "";
 }
 
-// receive message
-socket.on("newMessage", (msg) => {
-  displayMessage(msg);
-});
+// receive
+socket.on("newMessage", displayMessage);
 
-// display message
 function displayMessage(msg) {
   const div = document.createElement("div");
   div.classList.add("message");
@@ -137,7 +220,29 @@ function displayMessage(msg) {
   messagesDiv.appendChild(div);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
-</script>
+
+// SETTINGS
+
+function toggleSettings() {
+  document.getElementById("settings").classList.toggle("open");
+}
+
+function saveUsername() {
+  const newName = document.getElementById("usernameInput").value;
+  if (newName) {
+    username = newName;
+    localStorage.setItem("username", newName);
+    alert("Username updated!");
+  }
+}
+
+function toggleTheme() {
+  document.body.classList.toggle("light-mode");
+}
+
+function clearChat() {
+  messagesDiv.innerHTML = "";
+}
 </script>
 
 </body>
